@@ -1,0 +1,32 @@
+body {
+  background:#0f172a;
+  color:white;
+  font-family:sans-serif;
+  text-align:center;
+}
+
+#card {
+  max-width:350px;
+  margin:auto;
+  background:#1e293b;
+  border-radius:20px;
+  overflow:hidden;
+  padding:10px;
+}
+
+#card img {
+  width:100%;
+  border-radius:10px;
+}
+
+input {
+  padding:10px;
+  margin:10px;
+}
+
+button {
+  padding:10px 20px;
+  border-radius:10px;
+  margin:5px;
+  border:none;
+}

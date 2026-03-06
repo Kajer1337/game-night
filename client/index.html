@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="style.css">
+<script src="/socket.io/socket.io.js"></script>
+<script src="app.js"></script>
+</head>
+<body>
+
+<h1>🎮 Game Night</h1>
+
+<input id="name" placeholder="Wpisz swój nick">
+<button onclick="join()">Dołącz</button>
+
+<div id="adminPanel" style="display:none">
+  <h3>Panel Admina (Kajer)</h3>
+  <input id="gameInput" placeholder="Wpisz tytuł gry">
+  <button onclick="addGame()">Dodaj grę</button>
+</div>
+
+<h3>Gracze:</h3>
+<ul id="playersList"></ul>
+
+<div id="card"></div>
+
+</body>
+</html>
