@@ -7,37 +7,45 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+<!-- --- LOGIN --- -->
 <div id="login">
   <input type="text" id="nickname" placeholder="Twój nick">
   <button id="joinBtn">Dołącz</button>
 </div>
 
+<!-- --- LOBBY --- -->
 <div id="lobby" style="display:none;">
   <h2>Lobby</h2>
   <ul id="playerList"></ul>
   <div id="waiting">Oczekiwanie na start gry...</div>
+  
   <div id="adminPanel" style="display:none;">
-    <input type="text" id="gameInput" placeholder="Dodaj tytuł gry">
+    <input type="text" id="gameInput" placeholder="Tytuł gry">
     <button id="addGameBtn">Dodaj grę</button>
     <ul id="gamePool"></ul>
     <button id="startGameBtn">Zacznij grę</button>
   </div>
 </div>
 
-<div id="game" style="display:none;">
-  <h2 id="gameTitle"></h2>
-  <img id="gameImg" src="" alt="" style="width:100%;max-width:300px;">
-  <p id="gameDesc"></p>
-  <div id="voteBtns">
-    <button id="yesBtn">👍 Tak</button>
-    <button id="noBtn">👎 Nie</button>
+<!-- --- GAME CARD --- -->
+<div id="game" class="card-container" style="display:none;">
+  <div class="card" id="gameCard">
+    <h2 id="gameTitle"></h2>
+    <img id="gameImg" src="" alt="">
+    <p id="gameDesc"></p>
+    <div id="voteBtns">
+      <button id="yesBtn">👍</button>
+      <button id="noBtn">👎</button>
+    </div>
   </div>
 </div>
 
+<!-- --- WINNER --- -->
 <div id="winner" style="display:none;">
   <h1>Zwycięzca!</h1>
   <h2 id="winnerTitle"></h2>
-  <img id="winnerImg" src="" alt="" style="width:100%;max-width:300px;">
+  <img id="winnerImg" src="" alt="">
   <p id="winnerDesc"></p>
 </div>
 

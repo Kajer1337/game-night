@@ -1,8 +1,11 @@
+// server.js
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
-const axios = require("axios");
 const cors = require("cors");
+const fetch = require("node-fetch"); // npm install node-fetch@2
+
+const RAWG_API_KEY = "96402d7dbb174f8988935db1217ca773";
 
 const app = express();
 app.use(cors());
@@ -19,58 +22,39 @@ let currentIndex = 0;
 let votes = {};
 let gameStarted = false;
 
-// Twój RAWG API key
-const RAWG_KEY = "96402d7dbb174f8988935db1217ca773";
-
-// Endpoint do wyszukiwania gier RAWG
-app.get("/search", async (req, res) => {
-  const query = req.query.q;
-  try {
-    const response = await axios.get(
-      `https://api.rawg.io/api/games?search=${query}&key=${RAWG_KEY}`
-    );
-    if (response.data.results.length > 0) {
-      const game = response.data.results[0];
-      res.json({
-        name: game.name,
-        background_image: game.background_image,
-        genres: game.genres.map((g) => g.name),
-        description: game.description_raw || "",
-        released: game.released || "",
-      });
-    } else {
-      res.json({ error: "Nie znaleziono gry" });
-    }
-  } catch (err) {
-    console.error(err);
-    res.json({ error: "Błąd RAWG API" });
-  }
-});
-
-// SOCKET.IO
 io.on("connection", (socket) => {
   console.log("Nowe połączenie:", socket.id);
 
-  // Gracz dołącza
   socket.on("join", (name) => {
     players.push({ id: socket.id, name });
     if (name === "Kajer") {
       admin = socket.id;
       socket.emit("admin");
     }
-    socket.emit("gameStatus", { started: gameStarted });
-    // Każdy gracz widzi kto jest w lobby
-    io.emit("players", players.map((p) => p.name));
+    socket.emit("gameStatus", { started: gameStarted, isAdmin: socket.id === admin });
+    io.emit("players", players.map(p => p.name));
   });
 
-  // Dodawanie gry przez admina
-  socket.on("addGame", (game) => {
+  socket.on("addGame", async ({ name }) => {
     if (socket.id !== admin) return;
-    gamePool.push(game);
-    io.emit("gamePool", gamePool);
+    try {
+      const res = await fetch(`https://api.rawg.io/api/games?search=${encodeURIComponent(name)}&key=${RAWG_API_KEY}`);
+      const data = await res.json();
+      if (data.results && data.results.length > 0) {
+        const g = data.results[0];
+        const game = {
+          name: g.name,
+          image: g.background_image || "",
+          description: g.released ? `Released: ${g.released}` : ""
+        };
+        gamePool.push(game);
+        io.emit("gamePool", gamePool);
+      }
+    } catch (err) {
+      console.error("Błąd pobierania gry:", err);
+    }
   });
 
-  // Rozpoczęcie gry przez admina
   socket.on("startGame", () => {
     if (socket.id !== admin) return;
     if (gamePool.length === 0) return;
@@ -81,23 +65,28 @@ io.on("connection", (socket) => {
     io.emit("newGameRound", gamePool[currentIndex]);
   });
 
-  // Głosowanie przez graczy
   socket.on("vote", (vote) => {
     const game = gamePool[currentIndex];
     if (!votes[game.name]) votes[game.name] = 0;
     if (vote === "yes") votes[game.name]++;
-    // Jeśli wszyscy gracze oprócz admina zagłosowali
+
     const nonAdminPlayers = players.filter(p => p.id !== admin);
+
     if (votes[game.name] >= nonAdminPlayers.length) {
       currentIndex++;
       votes = {};
       if (currentIndex < gamePool.length) {
         io.emit("newGameRound", gamePool[currentIndex]);
       } else {
-        // Koniec gry – zwycięzca
-        const winner = gamePool.reduce((prev, curr) =>
-          (votes[prev.name] || 0) >= (votes[curr.name] || 0) ? prev : curr
-        );
+        let maxVotes = -1;
+        let winner = gamePool[0];
+        gamePool.forEach(g => {
+          const v = votes[g.name] || 0;
+          if (v > maxVotes) {
+            maxVotes = v;
+            winner = g;
+          }
+        });
         io.emit("gameWinner", winner);
         gameStarted = false;
         gamePool = [];
@@ -105,10 +94,9 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Gracz rozłącza się
   socket.on("disconnect", () => {
     players = players.filter(p => p.id !== socket.id);
-    io.emit("players", players.map((p) => p.name));
+    io.emit("players", players.map(p => p.name));
     if (socket.id === admin) {
       admin = null;
       gamePool = [];
@@ -118,8 +106,5 @@ io.on("connection", (socket) => {
   });
 });
 
-// PORT DLA RENDER
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
