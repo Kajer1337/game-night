@@ -1,28 +1,47 @@
 <!DOCTYPE html>
-<html>
+<html lang="pl">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game Night</title>
 <link rel="stylesheet" href="style.css">
-<script src="/socket.io/socket.io.js"></script>
-<script src="app.js"></script>
 </head>
 <body>
-
-<h1>🎮 Game Night</h1>
-
-<input id="name" placeholder="Wpisz swój nick">
-<button onclick="join()">Dołącz</button>
-
-<div id="adminPanel" style="display:none">
-  <h3>Panel Admina (Kajer)</h3>
-  <input id="gameInput" placeholder="Wpisz tytuł gry">
-  <button onclick="addGame()">Dodaj grę</button>
+<div id="login">
+  <input type="text" id="nickname" placeholder="Twój nick">
+  <button id="joinBtn">Dołącz</button>
 </div>
 
-<h3>Gracze:</h3>
-<ul id="playersList"></ul>
+<div id="lobby" style="display:none;">
+  <h2>Lobby</h2>
+  <ul id="playerList"></ul>
+  <div id="waiting">Oczekiwanie na start gry...</div>
+  <div id="adminPanel" style="display:none;">
+    <input type="text" id="gameInput" placeholder="Dodaj tytuł gry">
+    <button id="addGameBtn">Dodaj grę</button>
+    <ul id="gamePool"></ul>
+    <button id="startGameBtn">Zacznij grę</button>
+  </div>
+</div>
 
-<div id="card"></div>
+<div id="game" style="display:none;">
+  <h2 id="gameTitle"></h2>
+  <img id="gameImg" src="" alt="" style="width:100%;max-width:300px;">
+  <p id="gameDesc"></p>
+  <div id="voteBtns">
+    <button id="yesBtn">👍 Tak</button>
+    <button id="noBtn">👎 Nie</button>
+  </div>
+</div>
 
+<div id="winner" style="display:none;">
+  <h1>Zwycięzca!</h1>
+  <h2 id="winnerTitle"></h2>
+  <img id="winnerImg" src="" alt="" style="width:100%;max-width:300px;">
+  <p id="winnerDesc"></p>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

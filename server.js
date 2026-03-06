@@ -7,9 +7,6 @@ const cors = require("cors");
 const app = express();
 app.use(cors());
 app.use(express.json());
-
-// **SERWUJEMY KLIENTA**
-// Ważne: folder 'client' musi znajdować się w tym samym katalogu co server.js
 app.use(express.static(__dirname + "/client"));
 
 const server = http.createServer(app);
@@ -25,7 +22,7 @@ let gameStarted = false;
 // Twój RAWG API key
 const RAWG_KEY = "96402d7dbb174f8988935db1217ca773";
 
-// Endpoint do wyszukiwania gier
+// Endpoint do wyszukiwania gier RAWG
 app.get("/search", async (req, res) => {
   const query = req.query.q;
   try {
@@ -50,10 +47,11 @@ app.get("/search", async (req, res) => {
   }
 });
 
-// **SOCKET.IO**
+// SOCKET.IO
 io.on("connection", (socket) => {
   console.log("Nowe połączenie:", socket.id);
 
+  // Gracz dołącza
   socket.on("join", (name) => {
     players.push({ id: socket.id, name });
     if (name === "Kajer") {
@@ -61,15 +59,18 @@ io.on("connection", (socket) => {
       socket.emit("admin");
     }
     socket.emit("gameStatus", { started: gameStarted });
+    // Każdy gracz widzi kto jest w lobby
     io.emit("players", players.map((p) => p.name));
   });
 
+  // Dodawanie gry przez admina
   socket.on("addGame", (game) => {
     if (socket.id !== admin) return;
     gamePool.push(game);
     io.emit("gamePool", gamePool);
   });
 
+  // Rozpoczęcie gry przez admina
   socket.on("startGame", () => {
     if (socket.id !== admin) return;
     if (gamePool.length === 0) return;
@@ -80,18 +81,20 @@ io.on("connection", (socket) => {
     io.emit("newGameRound", gamePool[currentIndex]);
   });
 
+  // Głosowanie przez graczy
   socket.on("vote", (vote) => {
     const game = gamePool[currentIndex];
     if (!votes[game.name]) votes[game.name] = 0;
     if (vote === "yes") votes[game.name]++;
-    // Jeśli wszyscy gracze zagłosowali
-    if (votes[game.name] >= players.length) {
+    // Jeśli wszyscy gracze oprócz admina zagłosowali
+    const nonAdminPlayers = players.filter(p => p.id !== admin);
+    if (votes[game.name] >= nonAdminPlayers.length) {
       currentIndex++;
       votes = {};
       if (currentIndex < gamePool.length) {
         io.emit("newGameRound", gamePool[currentIndex]);
       } else {
-        // Koniec gry
+        // Koniec gry – zwycięzca
         const winner = gamePool.reduce((prev, curr) =>
           (votes[prev.name] || 0) >= (votes[curr.name] || 0) ? prev : curr
         );
@@ -101,9 +104,21 @@ io.on("connection", (socket) => {
       }
     }
   });
+
+  // Gracz rozłącza się
+  socket.on("disconnect", () => {
+    players = players.filter(p => p.id !== socket.id);
+    io.emit("players", players.map((p) => p.name));
+    if (socket.id === admin) {
+      admin = null;
+      gamePool = [];
+      gameStarted = false;
+      io.emit("gameStatus", { started: false });
+    }
+  });
 });
 
-// **DYNAMICZNY PORT DLA RENDER**
+// PORT DLA RENDER
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
