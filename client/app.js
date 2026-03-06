@@ -1,84 +1,214 @@
-const socket = io();
+const socket = io()
 
-const loginDiv = document.getElementById("login");
-const nicknameInput = document.getElementById("nickname");
-const joinBtn = document.getElementById("joinBtn");
+// --- ELEMENTY DOM ---
+const loginDiv = document.getElementById("login")
+const nicknameInput = document.getElementById("nickname")
+const joinBtn = document.getElementById("joinBtn")
+const lobbyDiv = document.getElementById("lobby")
+const playerList = document.getElementById("playerList")
+const waitingDiv = document.getElementById("waiting")
+const adminPanel = document.getElementById("adminPanel")
+const gameInput = document.getElementById("gameInput")
+const searchResults = document.getElementById("searchResults")
+const addGameBtn = document.getElementById("addGameBtn")
+const startGameBtn = document.getElementById("startGameBtn")
+const gamePool = document.getElementById("gamePool")
+const gameDiv = document.getElementById("game")
+const cardStack = document.getElementById("cardStack")
+const roundCounter = document.getElementById("roundCounter")
+const voteCounter = document.getElementById("voteCounter")
+const winnerDiv = document.getElementById("winner")
+const winnerTitle = document.getElementById("winnerTitle")
+const winnerImg = document.getElementById("winnerImg")
+const winnerDesc = document.getElementById("winnerDesc")
+const nextRoundBtn = document.getElementById("nextRoundBtn")
 
-const lobbyDiv = document.getElementById("lobby");
-const playerList = document.getElementById("playerList");
-const waitingDiv = document.getElementById("waiting");
-const adminPanel = document.getElementById("adminPanel");
-const gameInput = document.getElementById("gameInput");
-const addGameBtn = document.getElementById("addGameBtn");
-const gamePoolList = document.getElementById("gamePool");
-const startGameBtn = document.getElementById("startGameBtn");
+let selectedGame = null
+let voted = false
+let isDragging = false
+let dragCard = null
+let players = []
 
-const gameDiv = document.getElementById("game");
-const gameCard = document.getElementById("gameCard");
-const gameTitle = document.getElementById("gameTitle");
-const gameImg = document.getElementById("gameImg");
-const gameDesc = document.getElementById("gameDesc");
-const yesBtn = document.getElementById("yesBtn");
-const noBtn = document.getElementById("noBtn");
+// --- LOGIN ---
+joinBtn.onclick = () => {
+  const nick = nicknameInput.value.trim()
+  if (!nick) return
+  socket.emit("join", nick)
+  loginDiv.style.display = "none"
+  lobbyDiv.style.display = "block"
+}
 
-const winnerDiv = document.getElementById("winner");
-const winnerTitle = document.getElementById("winnerTitle");
-const winnerImg = document.getElementById("winnerImg");
-const winnerDesc = document.getElementById("winnerDesc");
+socket.on("admin", () => {
+  adminPanel.style.display = "block"
+  waitingDiv.style.display = "none"
+})
 
-let isAdmin = false;
+socket.on("players", (pl) => {
+  players = pl
+  playerList.innerHTML = ""
+  pl.forEach(p => {
+    const li = document.createElement("li")
+    li.textContent = p
+    playerList.appendChild(li)
+  })
+})
 
-joinBtn.addEventListener("click", () => {
-  const nick = nicknameInput.value.trim();
-  if(!nick) return alert("Wpisz nick!");
-  socket.emit("join", nick);
-  loginDiv.style.display = "none";
-  lobbyDiv.style.display = "block";
-});
+// --- WYSZUKIWANIE GIER ---
+gameInput.addEventListener("input", async () => {
+  const q = gameInput.value
+  if (q.length < 2) return (searchResults.innerHTML = "")
+  const res = await fetch(`/searchGames?q=${q}`)
+  const games = await res.json()
+  searchResults.innerHTML = ""
+  games.forEach(g => {
+    const div = document.createElement("div")
+    div.className = "searchItem"
+    div.innerHTML = `<img src="${g.image}" width="60"> ${g.name}`
+    div.onclick = () => { selectedGame = g; gameInput.value = g.name; searchResults.innerHTML = "" }
+    searchResults.appendChild(div)
+  })
+})
 
-socket.on("admin", () => { isAdmin = true; adminPanel.style.display="block"; waitingDiv.style.display="none"; });
+addGameBtn.onclick = () => {
+  if (!selectedGame) return
+  socket.emit("addGame", { name: selectedGame.name })
+  selectedGame = null
+  gameInput.value = ""
+}
 
-socket.on("players", (players) => { 
-  playerList.innerHTML=""; 
-  players.forEach(p => { const li=document.createElement("li"); li.textContent=p; playerList.appendChild(li); });
-});
+socket.on("gamePool", (pool) => {
+  gamePool.innerHTML = ""
+  pool.forEach(g => {
+    const li = document.createElement("li")
+    li.textContent = g.name
+    gamePool.appendChild(li)
+  })
+})
 
-addGameBtn.addEventListener("click", () => {
-  const title = gameInput.value.trim();
-  if(!title) return;
-  socket.emit("addGame",{name:title});
-  gameInput.value="";
-});
+startGameBtn.onclick = () => { socket.emit("startGame") }
 
-socket.on("gamePool",(pool)=>{ 
-  gamePoolList.innerHTML="";
-  pool.forEach(g=>{const li=document.createElement("li"); li.textContent=g.name; gamePoolList.appendChild(li);});
-});
+// --- GAME ROUND ---
+socket.on("newGameRound", (data) => {
+  voted = false
+  gameDiv.style.display = "block"
+  lobbyDiv.style.display = "none"
+  cardStack.innerHTML = ""
+  roundCounter.textContent = `Runda ${data.round}/${data.total}`
+  voteCounter.textContent = `Oddano głosów: 0/${players.length}`
 
-startGameBtn.addEventListener("click",()=>{ socket.emit("startGame"); });
+  const cards = [data.game, ...data.stack]
+  cards.forEach((game, i) => {
+    const card = document.createElement("div")
+    card.className = "card"
+    card.style.zIndex = cards.length - i
+    card.innerHTML = `<h2>${game.name.toUpperCase()}</h2>
+                      <img src="${game.image}">
+                      <p><b>Gatunek:</b> ${game.genres}<br>
+                         <b>Premiera:</b> ${game.released}<br>
+                         <b>Ocena:</b> ⭐ ${game.rating}<br>
+                         <i>${game.description?game.description:"Brak opisu"}</i></p>
+                      <div class="overlay"></div>`
+    cardStack.appendChild(card)
+  })
+  attachSwipe(cardStack.firstChild)
+})
 
-socket.on("gameStatus",(status)=>{ waitingDiv.style.display = (!status.started && !isAdmin)?"block":"none"; });
+// --- SWIPE ---
+function attachSwipe(card) {
+  if (!card) return
+  let startX = 0, startY = 0
+  let overlay = card.querySelector(".overlay")
 
-socket.on("newGameRound",(game)=>{
-  lobbyDiv.style.display="none"; winnerDiv.style.display="none"; gameDiv.style.display="block";
-  gameTitle.textContent=game.name; gameImg.src=game.image||""; gameDesc.textContent=game.description||"";
+  const startDrag = e => {
+    e.preventDefault()
+    isDragging = true
+    dragCard = card
+    startX = e.type.startsWith("touch") ? e.touches[0].clientX : e.clientX
+    startY = e.type.startsWith("touch") ? e.touches[0].clientY : e.clientY
+    card.style.transition = "none"
+  }
 
-  gameCard.style.transform="translate(0,0) rotate(0deg)"; gameCard.style.transition="none";
+  const moveDrag = e => {
+    if (!isDragging || dragCard !== card) return
+    const x = e.type.startsWith("touch") ? e.touches[0].clientX : e.clientX
+    const dx = x - startX
+    card.style.transform = `translate(${dx}px,0) rotate(${dx/10}deg)`
+    overlay.style.opacity = Math.min(Math.abs(dx)/150,1)
+    overlay.textContent = dx>0?"LIKE 👍":"NO ❌"
+  }
 
-  let offsetX=0, offsetY=0, startX=0, startY=0;
-  function startDrag(e){ startX=e.type.includes("touch")?e.touches[0].clientX:e.clientX; startY=e.type.includes("touch")?e.touches[0].clientY:e.clientY; gameCard.classList.add("dragging"); document.addEventListener("mousemove",drag); document.addEventListener("mouseup",endDrag); document.addEventListener("touchmove",drag); document.addEventListener("touchend",endDrag);}
-  function drag(e){ const x=e.type.includes("touch")?e.touches[0].clientX:e.clientX; const y=e.type.includes("touch")?e.touches[0].clientY:e.clientY; offsetX=x-startX; offsetY=y-startY; gameCard.style.transform=`translate(${offsetX}px,${offsetY}px) rotate(${offsetX*0.1}deg)`; }
-  function endDrag(){ gameCard.classList.remove("dragging"); if(offsetX>150){socket.emit("vote","yes"); gameCard.style.transition="transform 0.5s ease"; gameCard.style.transform="translateX(1000px) rotate(20deg)"; setTimeout(()=>gameDiv.style.display="none",500);}
-  else if(offsetX<-150){socket.emit("vote","no"); gameCard.style.transition="transform 0.5s ease"; gameCard.style.transform="translateX(-1000px) rotate(-20deg)"; setTimeout(()=>gameDiv.style.display="none",500);}
-  else{ gameCard.style.transition="transform 0.3s ease"; gameCard.style.transform="translate(0,0) rotate(0deg)"; }
-  document.removeEventListener("mousemove",drag); document.removeEventListener("mouseup",endDrag); document.removeEventListener("touchmove",drag); document.removeEventListener("touchend",endDrag); }
+  const endDrag = e => {
+    if (!isDragging || dragCard !== card) return
+    isDragging = false
+    const x = e.type.startsWith("touch") ? e.changedTouches[0].clientX : e.clientX
+    const dx = x - startX
+    if (Math.abs(dx) < 50) {
+      card.style.transition = "transform 0.3s"
+      card.style.transform = "translate(0,0) rotate(0)"
+      overlay.style.opacity = 0
+      dragCard = null
+      return
+    }
+    voted = true
+    socket.emit("vote", dx>0?"yes":"no")
+    card.style.transition = "all 0.5s cubic-bezier(.5,1.5,.5,1)"
+    card.style.transform = `translateX(${dx>0?window.innerWidth:-window.innerWidth}px) rotate(${dx>0?30:-30}deg)`
+    overlay.style.opacity = 0
+    setTimeout(()=>{
+      card.remove()
+      attachSwipe(cardStack.firstChild)
+      dragCard = null
+    },500)
+  }
 
-  gameCard.addEventListener("mousedown",startDrag); gameCard.addEventListener("touchstart",startDrag);
+  card.addEventListener("mousedown", startDrag)
+  card.addEventListener("mousemove", moveDrag)
+  card.addEventListener("mouseup", endDrag)
+  card.addEventListener("mouseleave", endDrag)
+  card.addEventListener("touchstart", startDrag)
+  card.addEventListener("touchmove", moveDrag)
+  card.addEventListener("touchend", endDrag)
+}
 
-  yesBtn.onclick=()=>{socket.emit("vote","yes"); gameCard.style.transition="transform 0.5s ease"; gameCard.style.transform="translateX(1000px) rotate(20deg)"; setTimeout(()=>gameDiv.style.display="none",500);}
-  noBtn.onclick=()=>{socket.emit("vote","no"); gameCard.style.transition="transform 0.5s ease"; gameCard.style.transform="translateX(-1000px) rotate(-20deg)"; setTimeout(()=>gameDiv.style.display="none",500);}
-});
+// --- VOTES & WINNER ---
+socket.on("voteUpdate", v => voteCounter.textContent = `Oddano głosów: ${v}/${players.length}`)
 
-socket.on("gameWinner",(winner)=>{
-  gameDiv.style.display="none"; winnerDiv.style.display="block"; winnerTitle.textContent=winner.name; winnerImg.src=winner.image||""; winnerDesc.textContent=winner.description||"";
-});
+socket.on("gameWinner", game => {
+  gameDiv.style.display="none"
+  winnerDiv.style.display="block"
+  winnerTitle.textContent=game.name
+  winnerImg.src=game.image
+  winnerDesc.innerHTML=`<b>Gatunek:</b> ${game.genres}<br><b>Premiera:</b> ${game.released}<br>⭐ ${game.rating}<br><i>${game.description?game.description:"Brak opisu"}</i>`
+  startConfetti()
+})
+
+nextRoundBtn.onclick = () => {
+  socket.emit("nextRound")
+}
+
+socket.on("resetGame", () => {
+  winnerDiv.style.display = "none"
+  lobbyDiv.style.display = "block"
+  gamePool.innerHTML = ""
+})
+
+// --- KONFETTI ---
+function startConfetti() {
+  const canvas=document.getElementById("confetti")
+  const ctx=canvas.getContext("2d")
+  canvas.width=window.innerWidth
+  canvas.height=window.innerHeight
+  let pieces=[]
+  for(let i=0;i<200;i++)pieces.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,size:5+Math.random()*5,speed:2+Math.random()*3})
+  function update(){
+    ctx.clearRect(0,0,canvas.width,canvas.height)
+    pieces.forEach(p=>{
+      p.y+=p.speed
+      if(p.y>canvas.height)p.y=0
+      ctx.fillStyle="gold"
+      ctx.fillRect(p.x,p.y,p.size,p.size)
+    })
+    requestAnimationFrame(update)
+  }
+  update()
+}

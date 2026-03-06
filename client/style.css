@@ -1,55 +1,117 @@
 body {
-  font-family: 'Helvetica Neue', sans-serif;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: #fff;
   margin: 0;
-  padding: 0;
+  font-family: 'Arial', sans-serif;
+  background: #f5f5f5;
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: 100vh;
 }
 
-#login {
-  margin-top: 100px;
+#login, #lobby, #game, #winner {
+  margin-top: 50px;
+  text-align: center;
 }
-#login input {
+
+input[type=text] {
   padding: 10px;
   font-size: 16px;
-  border-radius: 5px;
-  border: none;
-  margin-right: 5px;
+  width: 200px;
 }
-#login button {
+
+button {
   padding: 10px 20px;
+  font-size: 16px;
+  margin-left: 10px;
+  cursor: pointer;
+  background-color: #007bff;
+  color: white;
   border: none;
   border-radius: 5px;
-  background-color: #ff6b6b;
-  color: #fff;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+#cardStack {
+  position: relative;
+  width: 300px;
+  height: 400px;
+  margin: 50px auto;
+}
+
+.card {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 20px;
+  transition: transform 0.3s ease;
+}
+
+.card img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.card h2 {
+  font-family: 'Arial Black', sans-serif;
+  font-size: 22px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #222;
+  margin: 5px 0;
+}
+
+.card p {
+  font-size: 14px;
+  text-align: left;
+}
+
+.overlay {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 32px;
   font-weight: bold;
-  cursor: pointer;
+  color: white;
+  text-shadow: 1px 1px 5px black;
+  opacity: 0;
+  pointer-events: none;
 }
 
-#lobby {
-  margin-top: 20px;
-  width: 90%;
-  max-width: 400px;
+#confetti {
+  position: fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  pointer-events: none;
 }
-#playerList, #gamePool { list-style:none; padding:0; }
-#playerList li, #gamePool li { padding:5px 10px; background:rgba(255,255,255,0.1); margin-bottom:5px; border-radius:5px; }
 
-#adminPanel input { padding:8px; border-radius:5px; border:none; margin-right:5px; margin-top:5px; }
-#adminPanel button { padding:8px 12px; border:none; border-radius:5px; background-color:#ffb400; color:#000; font-weight:bold; cursor:pointer; margin-top:5px; }
+#winner img {
+  width: 400px;
+  height: 300px;
+  object-fit: cover;
+  border-radius: 15px;
+  margin: 20px 0;
+}
 
-.card-container { position:relative; width:300px; max-width:90%; height:400px; margin-top:20px; perspective:1000px; }
-.card { position:absolute; width:100%; height:100%; background:#fff; color:#333; border-radius:15px; box-shadow:0 10px 20px rgba(0,0,0,0.3); display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:20px; user-select:none; transition:transform 0.3s ease, opacity 0.3s ease; }
-.card img { max-width:100%; max-height:200px; border-radius:10px; margin-bottom:10px; }
+#winner h1 {
+  font-size: 36px;
+  color: #ff6600;
+}
 
-#voteBtns { margin-top:auto; display:flex; justify-content:space-around; width:100%; }
-#voteBtns button { padding:12px 20px; font-size:20px; border-radius:10px; border:none; cursor:pointer; font-weight:bold; }
-#voteBtns button:first-child { background:#4caf50; color:#fff; }
-#voteBtns button:last-child { background:#f44336; color:#fff; }
-
-#winner img { max-width:300px; border-radius:10px; margin:10px 0; }
-
-.card.dragging { transition:none; }
+#winner p {
+  font-size: 18px;
+}

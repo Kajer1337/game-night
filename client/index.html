@@ -5,51 +5,52 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Game Night</title>
 <link rel="stylesheet" href="style.css">
+<script src="/socket.io/socket.io.js"></script>
+<script src="app.js" defer></script>
 </head>
 <body>
 
-<!-- --- LOGIN --- -->
+<!-- LOGIN -->
 <div id="login">
+  <h1>Game Night</h1>
   <input type="text" id="nickname" placeholder="Twój nick">
   <button id="joinBtn">Dołącz</button>
 </div>
 
-<!-- --- LOBBY --- -->
+<!-- LOBBY -->
 <div id="lobby" style="display:none;">
-  <h2>Lobby</h2>
+  <h2>Gracze:</h2>
   <ul id="playerList"></ul>
-  <div id="waiting">Oczekiwanie na start gry...</div>
-  
+  <div id="waiting">Oczekiwanie na start...</div>
+
+  <!-- ADMIN PANEL -->
   <div id="adminPanel" style="display:none;">
-    <input type="text" id="gameInput" placeholder="Tytuł gry">
+    <h3>Panel Admina (Kajer)</h3>
+    <input type="text" id="gameInput" placeholder="Dodaj grę">
+    <div id="searchResults"></div>
     <button id="addGameBtn">Dodaj grę</button>
-    <ul id="gamePool"></ul>
     <button id="startGameBtn">Zacznij grę</button>
+    <h4>Pula gier:</h4>
+    <ul id="gamePool"></ul>
   </div>
 </div>
 
-<!-- --- GAME CARD --- -->
-<div id="game" class="card-container" style="display:none;">
-  <div class="card" id="gameCard">
-    <h2 id="gameTitle"></h2>
-    <img id="gameImg" src="" alt="">
-    <p id="gameDesc"></p>
-    <div id="voteBtns">
-      <button id="yesBtn">👍</button>
-      <button id="noBtn">👎</button>
-    </div>
-  </div>
+<!-- GAME -->
+<div id="game" style="display:none;">
+  <div id="roundCounter"></div>
+  <div id="voteCounter"></div>
+  <div id="cardStack"></div>
 </div>
 
-<!-- --- WINNER --- -->
+<!-- WINNER -->
 <div id="winner" style="display:none;">
-  <h1>Zwycięzca!</h1>
-  <h2 id="winnerTitle"></h2>
-  <img id="winnerImg" src="" alt="">
+  <h1 id="winnerTitle"></h1>
+  <img id="winnerImg">
   <p id="winnerDesc"></p>
+  <button id="nextRoundBtn">Następna runda</button>
 </div>
 
-<script src="/socket.io/socket.io.js"></script>
-<script src="app.js"></script>
+<canvas id="confetti"></canvas>
+
 </body>
 </html>
